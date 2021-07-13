@@ -1,0 +1,17 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=2]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+uniform sampler2D bitmapFont;
+
+void vertex(){
+	UV /= vec2(16f,6f);
+	UV +=vec2(INSTANCE_CUSTOM.x,INSTANCE_CUSTOM.y);
+}
+void fragment(){
+	COLOR *= texture(bitmapFont,UV);
+}"
+
+[resource]
+resource_local_to_scene = true
+shader = SubResource( 1 )
