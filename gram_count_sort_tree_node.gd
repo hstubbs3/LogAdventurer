@@ -1,5 +1,3 @@
-extends Node
-
 class_name gram_count_sort_tree_node
 
 var data_gram_id : int = -1

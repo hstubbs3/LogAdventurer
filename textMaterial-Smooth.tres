@@ -1,0 +1,22 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=2]
+
+[ext_resource path="res://LogAdventurerMono-8x12.png" type="Texture" id=1]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+uniform sampler2D bitmapFont;
+uniform float threshold;
+
+void vertex(){
+	UV /= vec2(16f,6f);
+	UV +=vec2(INSTANCE_CUSTOM.x,INSTANCE_CUSTOM.y);
+}
+void fragment(){
+	if(length(texture(bitmapFont,UV).xyz) < threshold){ discard; }
+}"
+
+[resource]
+resource_local_to_scene = true
+shader = SubResource( 1 )
+shader_param/threshold = 0.5
+shader_param/bitmapFont = ExtResource( 1 )

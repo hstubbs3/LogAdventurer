@@ -4,6 +4,7 @@ extends Control
 # Declare member variables here. Examples:
 # var a = 2
 # var b = "text"
+export var file_name : String
 var gram_count_sort_tree = gram_count_sort_tree_node.new()
 var grams_counts = Array()
 var grams_type = PoolByteArray()
@@ -22,19 +23,18 @@ var log_file = null
 var stash_delta = 0.0
 var view_line_height = 12.0
 var view_char_width = 8.0
-var view_width = 1600
-var view_height = 800
+var view_size = Vector2(0,0)
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	log_material = preload('res://textMaterial.tres')
+	log_material = preload('res://textMaterial-Smooth.tres')
 	text_font = preload('res://LogAdventurerMono-8x12.png')
 	log_material.set_shader_param("bitmapFont",text_font)
 #	var testPhrase = "This log is not a banana"
 #	var line = log_line.new()
 #	var line_mesh = line.set_text(0,testPhrase)
 #	$LogView.add_child(line_mesh)
-	loadLog('log_line.gd')
+	loadLog(file_name)
 #	loadLog('res://lorem.txt')
 
 
@@ -53,6 +53,7 @@ func _input(event):
 				
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
+	name = file_name
 	if log_file != null:
 		if delta < 0.1 :
 			read_lines_frame += 2
@@ -66,16 +67,16 @@ func _process(delta):
 		return
 
 	if Input.is_action_pressed("zoom_in"):
-		$LogView.scale*=1.1
+		rect_scale*=1.1
 		view_line_height*=1.1
 		view_char_width*=1.1
 	elif Input.is_action_pressed("zoom_out"):
-		$LogView.scale/=1.1
+		rect_scale/=1.1
 		view_line_height/=1.1
 		view_char_width/=1.1
 	elif Input.is_action_pressed("zoom_reset"):
-		$LogView.scale.x=1
-		$LogView.scale.y=1
+		rect_scale.x=1
+		rect_scale.y=1
 		view_line_height=12.0
 		view_char_width=8.0
 		$LogView.position.x=0
@@ -83,7 +84,7 @@ func _process(delta):
 	if Input.is_action_pressed("ui_home"):
 		view_starts_line=0
 	if Input.is_action_pressed("ui_end"):
-		view_starts_line=index - int(float(60)/$LogView.scale.y)
+		view_starts_line=index - int(float(60)/rect_scale.y)
 		
 	if Input.is_action_pressed("ui_left"):
 		$LogView.position.x-=$LogView.scale.x
@@ -122,7 +123,8 @@ func _process(delta):
 			line.set_text(line_number,grams,grams_type,grams_counts,lines_grams[line_number],lines[line_number].length())
 			line.translate(Vector2(0,line_number * 12))		
 			$LogView.add_child(line)
-
+	$Label.text = String(OS.window_size)+" "+String(rect_size)+" "+String(rect_scale)
+	
 func gramify_string(text):
 	var text_grams = Array()
 	var i = -1

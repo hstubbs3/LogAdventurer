@@ -9,7 +9,7 @@
 config_version=4
 
 _global_script_classes=[ {
-"base": "Node",
+"base": "Reference",
 "class": "gram_count_sort_tree_node",
 "language": "GDScript",
 "path": "res://gram_count_sort_tree_node.gd"
@@ -34,6 +34,8 @@ config/icon="res://icon.png"
 
 window/size/width=1600
 window/size/height=800
+window/stretch/mode="2d"
+window/stretch/aspect="expand"
 
 [input]
 
