@@ -19,7 +19,7 @@ var grams_counts
 func set_text_shader(log_material):
 	material = log_material
 	
-func set_text(index,world_grams,world_grams_types,world_grams_counts,line_grams,text_length):
+func set_text(index,world_grams,world_grams_types,world_grams_counts,max_count,line_grams,text_length):
 	id = index
 	grams = world_grams
 	grams_types = world_grams_types
@@ -54,6 +54,7 @@ func set_text(index,world_grams,world_grams_types,world_grams_counts,line_grams,
 	for gram_id in text_grams :
 		var hue = Color.darkgray
 		if grams_types[gram_id] > 0 :
+			"""
 			var grams_to_right = 0
 			var gram_count = grams_counts[gram_id].data_gram_count
 			var check_node = grams_counts[0].right
@@ -89,6 +90,14 @@ func set_text(index,world_grams,world_grams_types,world_grams_counts,line_grams,
 			#print("evaluated gram brightness - ",gram_id," ",grams_to_right," ",grams_counts[0].node_weight)
 			var gram_brightness = 0.5+0.5*float(grams_to_right)/grams_counts[0].node_weight
 			hue = Color.from_hsv(float((gram_id*81)%512)/511,1.0,gram_brightness)
+			"""
+			var h : int = 5381
+			for c in grams[gram_id].to_ascii():
+				h += (h << 5) + c
+			if(h < 0):
+				#print_debug("trying to hash gram: '", grams[gram_id],"' got value: ",h)
+				h *= -1
+			hue = Color.from_hsv(float(h%256)/255,1.0,1.0 - (grams_counts[gram_id]-1)*0.6/max_count)
 		for c in grams[gram_id].to_ascii():
 			multimesh.set_instance_color(instance,hue)
 			if c > 31 :

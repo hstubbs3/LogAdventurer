@@ -4,7 +4,7 @@ extends Control
 # Declare member variables here. Examples:
 # var a = 2
 # var b = "text"
-export var file_name : String
+var file_name : String
 var gram_count_sort_tree = gram_count_sort_tree_node.new()
 var max_count = 1
 var grams_counts = Array()
@@ -26,6 +26,9 @@ var view_line_height = 12.0
 var view_char_width = 8.0
 var view_size = Vector2(0,0)
 
+onready var v_scroll = $"../VScrollBar"
+onready var h_scroll = $"../HScrollBar"
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	log_material = preload('res://textMaterial-Smooth.tres')
@@ -35,7 +38,7 @@ func _ready():
 #	var line = log_line.new()
 #	var line_mesh = line.set_text(0,testPhrase)
 #	$LogView.add_child(line_mesh)
-	loadLog(file_name)
+#	loadLog(file_name)
 #	loadLog('res://lorem.txt')
 
 
@@ -54,6 +57,9 @@ func _input(event):
 				
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
+	rect_size.x = $"..".rect_size.x - 16
+	rect_size.y = $"..".rect_size.y - 16
+
 	name = file_name
 	if log_file != null:
 		if delta < 0.1 :
@@ -66,7 +72,10 @@ func _process(delta):
 		read_log_lines(read_lines_frame)
 	if delta < 0.1 and stash_delta < 0.1 : 
 		return
-
+	
+	if not $"..".visible :
+		return 
+		
 	if Input.is_action_pressed("zoom_in"):
 		rect_scale*=1.1
 		view_line_height*=1.1
@@ -82,36 +91,44 @@ func _process(delta):
 		view_char_width=8.0
 		$LogView.position.x=0
 	
+	view_starts_line = v_scroll.value
+	$LogView.position.x = -1.0 * h_scroll.value
+	v_scroll.max_value = index
+	
 	if Input.is_action_pressed("ui_home"):
 		view_starts_line=0
 	if Input.is_action_pressed("ui_end"):
-		view_starts_line=index - int(float(60)/rect_scale.y)
+		view_starts_line=index - int(float(rect_size.y)/view_line_height)
 		
 	if Input.is_action_pressed("ui_left"):
-		$LogView.position.x-=$LogView.scale.x
-	if Input.is_action_pressed("ui_right"):
 		$LogView.position.x+=$LogView.scale.x
+		h_scroll.value += 1
+	if Input.is_action_pressed("ui_right"):
+		$LogView.position.x-=$LogView.scale.x
+		h_scroll.value -= 1
 
 	if Input.is_action_pressed("ui_up"):
 		#if view_starts_line > 0 : 
 			view_starts_line -= 1.0
 	elif Input.is_action_pressed("ui_page_up") :
 	#	if view_starts_line > 60 :
-			view_starts_line -= int(float(60)/$LogView.scale.y)
+			view_starts_line -= int(float(rect_size.y)/view_line_height)
 	elif Input.is_action_pressed("ui_down"):
 	#	if view_starts_line + 60 < lines.size():
 			view_starts_line += 1
 	elif Input.is_action_pressed("ui_page_down"):
 	#	if view_starts_line + 60 < lines.size():
-			view_starts_line += int(float(60)/$LogView.scale.y)
+			view_starts_line += int(float(rect_size.y)/view_line_height)
 	$LogView.position.y = -12.0*view_starts_line
 #	print("view set to start at - ",view_starts_line)
 	
-	while $LogView.get_child_count() > 200 :
+	v_scroll.value = view_starts_line
+	var lines_screen = int(float(rect_size.y)/view_line_height) 
+	while $LogView.get_child_count() > 7 * lines_screen:
 		$LogView.remove_child($LogView.get_child(0))
 		#print("removing child")
 	var lines_in_view = $LogView.get_children()
-	for line_number in range(int(max(0,view_starts_line)),int(min(lines.size(),view_starts_line+68/$LogView.scale.y))):
+	for line_number in range(int(max(0,view_starts_line)),int(min(lines.size(),view_starts_line + lines_screen))):
 		var need = true
 		for line_in_view in lines_in_view :
 			if line_in_view.id == line_number :
@@ -121,7 +138,7 @@ func _process(delta):
 			#print("adding child ",line_number)
 			var line = log_line.new()
 			line.set_text_shader(log_material)
-			line.set_text(line_number,grams,grams_type,grams_counts,max_count,lines_grams[line_number],lines[line_number].length())
+			line.set_text(line_number,grams,grams_type,grams_counts,max_count,lines_grams[line_number],lines[line_number])
 			line.translate(Vector2(0,line_number * 12))		
 			$LogView.add_child(line)
 	$Label.text = String(OS.window_size)+" "+String(rect_size)+" "+String(rect_scale)
@@ -187,7 +204,8 @@ func gramify_string(text):
 #		print(gram_id, " : ",grams[gram_id])
 	return text_grams
 	 
-func loadLog(file):
+func loadLog(file = file_name):
+	file_name = file
 	log_file = File.new()
 	log_file.open(file, File.READ)
 	index = 0
@@ -197,7 +215,9 @@ func read_log_lines(max_lines):
 	var end_read_at = index + max_lines
 	while not log_file.eof_reached(): # iterate through all lines until the end of file is reached
 		var text = log_file.get_line()
-		lines.append(text)
+		var line_length = text.length()
+		lines.append(line_length)
+		if line_length > h_scroll.max_value : h_scroll.max_value = line_length
 		var line_grams = gramify_string(text)
 		lines_grams.append(line_grams)
 		index+=1

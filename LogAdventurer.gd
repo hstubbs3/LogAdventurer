@@ -1,17 +1,24 @@
 extends Control
 
-
-# Declare member variables here. Examples:
-# var a = 2
-# var b = "text"
+var old_x
+var old_y
 
 
-# Called when the node enters the scene tree for the first time.
 func _ready():
+		rect_size = OS.window_size
+		get_viewport().size = rect_size
+		old_x = rect_size.x
+		old_y = rect_size.y
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
 	rect_size = OS.window_size
 	get_viewport().size = rect_size
 
+	if old_x != rect_size.x:
+		rect_scale.x = float(rect_size.x) / old_x
+		old_x = rect_size.x
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-#func _process(delta):
-#	pass
+	if old_y != rect_size.y:
+		rect_scale.y = float(old_y) / rect_size.y
+		old_y = rect_size.y
+	
