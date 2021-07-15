@@ -97,7 +97,12 @@ func set_text(index,world_grams,world_grams_types,world_grams_counts,max_count,l
 			if(h < 0):
 				#print_debug("trying to hash gram: '", grams[gram_id],"' got value: ",h)
 				h *= -1
-			hue = Color.from_hsv(float(h%256)/255,1.0,1.0 - (grams_counts[gram_id]-1)*0.6/max_count)
+			var word_bright =  1.0 - float(grams_counts[gram_id])/float(max_count)
+			word_bright *=  word_bright * 0.5
+			word_bright += 0.5
+			#print(word_bright)
+			hue = Color.from_hsv(float(h%256)/255,word_bright,word_bright )
+
 		for c in grams[gram_id].to_ascii():
 			multimesh.set_instance_color(instance,hue)
 			if c > 31 :

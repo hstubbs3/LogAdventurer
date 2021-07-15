@@ -57,6 +57,7 @@ func _input(event):
 				
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
+	stash_delta += delta
 	rect_size.x = $"..".rect_size.x - 16
 	rect_size.y = $"..".rect_size.y - 16
 
@@ -64,14 +65,13 @@ func _process(delta):
 	if log_file != null:
 		if delta < 0.1 :
 			read_lines_frame += 2
-			stash_delta += delta
 		else:
 			read_lines_frame -= 1
-			stash_delta = 0.0
-		print(delta," gonna try to read : ",read_lines_frame," starting at ",index)
+		print_debug(delta," gonna try to read : ",read_lines_frame," starting at ",index, " current max_count: ",max_count)
 		read_log_lines(read_lines_frame)
-	if delta < 0.1 and stash_delta < 0.1 : 
+	if stash_delta < 0.1 : 
 		return
+	stash_delta -= 0.1
 	
 	if not $"..".visible :
 		return 
@@ -94,6 +94,9 @@ func _process(delta):
 	view_starts_line = v_scroll.value
 	$LogView.position.x = -1.0 * h_scroll.value
 	v_scroll.max_value = index
+	$Label.rect_position.y = rect_size.y - 16
+	$Label.rect_position.x = rect_size.x*0.95
+	$Label.text = String(index)
 	
 	if Input.is_action_pressed("ui_home"):
 		view_starts_line=0
@@ -141,7 +144,7 @@ func _process(delta):
 			line.set_text(line_number,grams,grams_type,grams_counts,max_count,lines_grams[line_number],lines[line_number])
 			line.translate(Vector2(0,line_number * 12))		
 			$LogView.add_child(line)
-	$Label.text = String(OS.window_size)+" "+String(rect_size)+" "+String(rect_scale)
+#	$Label.text = String(OS.window_size)+" "+String(rect_size)+" "+String(rect_scale)
 	
 func gramify_string(text):
 	var text_grams = Array()
@@ -192,9 +195,10 @@ func gramify_string(text):
 			grams_counts.append(1)
 		else :
 			#grams_counts[gram_id].increment_self_by_one()
-			grams_counts[gram_id]+=1
-			if grams_counts[gram_id] > max_count :
-				max_count = grams_counts[gram_id]
+			if grams_counts[gram_id] < 100000:
+				grams_counts[gram_id]+=1
+				if grams_counts[gram_id] > max_count :
+					max_count = grams_counts[gram_id]
 		text_grams.append(gram_id)
 #		print("adding gram - ",gram_id," : ",gram_text)
 		gram_start = gram_end + 1

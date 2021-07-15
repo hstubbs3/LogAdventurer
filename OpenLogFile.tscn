@@ -26,8 +26,9 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
+[node name="LogView" type="Node2D" parent="LogPane"]
+
 [node name="Label" type="Label" parent="LogPane"]
-visible = false
 anchor_left = 1.0
 anchor_top = 22.113
 anchor_right = 1.0
@@ -39,8 +40,6 @@ margin_bottom = 36.61
 __meta__ = {
 "_edit_use_anchors_": false
 }
-
-[node name="LogView" type="Node2D" parent="LogPane"]
 
 [node name="HScrollBar" type="HScrollBar" parent="."]
 margin_right = 12.0
