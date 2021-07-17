@@ -6,11 +6,12 @@ extends Control
 # var b = "text"
 export var file_name : String
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	pass
+onready var paste_output=$Label
 
+
+	
 func load_log(file = file_name):
+	$LogPane.paste_output = paste_output
 	file_name = file
 	$LogPane.loadLog(file_name)
 

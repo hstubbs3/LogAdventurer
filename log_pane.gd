@@ -25,6 +25,11 @@ var stash_delta = 0.0
 var view_line_height = 12.0
 var view_char_width = 8.0
 var view_size = Vector2(0,0)
+var dragging = false
+var last_drag_position : Vector2
+var selected_line = -1
+var selected_char = -1
+var paste_output
 
 onready var v_scroll = $"../VScrollBar"
 onready var h_scroll = $"../HScrollBar"
@@ -43,6 +48,8 @@ func _ready():
 
 
 func _input(event):
+	if not $"..".visible :
+		return
 #	print(event.as_text())
 	if event is InputEventMouseButton :
 		if event.button_index == BUTTON_WHEEL_UP :
@@ -53,8 +60,44 @@ func _input(event):
 			if event.pressed :
 				$LogView.position.y -= 48 
 				view_starts_line += 4
-
+		elif event.button_index == BUTTON_LEFT:
+			if not dragging and event.pressed:
+				last_drag_position = event.position
+			dragging = event.pressed
+		elif event.button_index == BUTTON_RIGHT:
+			if event.pressed:
+				var index_selected = int((event.position.y-92)/view_line_height +view_starts_line)
+				if selected_line == index_selected :
+					var char_selected = int(event.position.x/view_char_width+v_scroll.value)
+					print(char_selected)
+					if selected_char == char_selected :
+						var string = '\n'
+						for gram_id in lines_grams[index_selected]:
+							string+=grams[gram_id]
+						print(string)
+						paste_output.text+=string
+						for child in $LogView.get_children():
+							if child.id == selected_line :
+								child.highlight_all()
+								break
+					else :
+						for child in $LogView.get_children():
+							if child.id == selected_line :
+								var gram = child.highlight(char_selected)
+								if gram :
+									paste_output.text+='\n' + gram
+								break
+						selected_char = char_selected
+				else :
+					selected_char = -1
+					selected_line = index_selected
 				
+	if event is InputEventMouseMotion and dragging:
+		var relative = event.position - last_drag_position
+		h_scroll.value -= relative.x
+		v_scroll.value -= relative.y
+		last_drag_position = event.position
+		
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	stash_delta += delta
@@ -104,10 +147,8 @@ func _process(delta):
 		view_starts_line=index - int(float(rect_size.y)/view_line_height)
 		
 	if Input.is_action_pressed("ui_left"):
-		$LogView.position.x+=$LogView.scale.x
 		h_scroll.value += 1
 	if Input.is_action_pressed("ui_right"):
-		$LogView.position.x-=$LogView.scale.x
 		h_scroll.value -= 1
 
 	if Input.is_action_pressed("ui_up"):
@@ -126,6 +167,8 @@ func _process(delta):
 #	print("view set to start at - ",view_starts_line)
 	
 	v_scroll.value = view_starts_line
+	$LogView.position.x= -1.0*view_char_width*h_scroll.value
+
 	var lines_screen = int(float(rect_size.y)/view_line_height) 
 	while $LogView.get_child_count() > 7 * lines_screen:
 		$LogView.remove_child($LogView.get_child(0))
@@ -210,6 +253,7 @@ func gramify_string(text):
 	 
 func loadLog(file = file_name):
 	file_name = file
+	print("loadLog: ",file_name)
 	log_file = File.new()
 	log_file.open(file, File.READ)
 	index = 0

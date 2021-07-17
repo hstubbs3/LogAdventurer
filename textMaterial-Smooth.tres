@@ -7,12 +7,15 @@ code = "shader_type canvas_item;
 uniform sampler2D bitmapFont;
 uniform float threshold;
 
+varying float highlight;
+
 void vertex(){
 	UV /= vec2(16f,6f);
 	UV +=vec2(INSTANCE_CUSTOM.x,INSTANCE_CUSTOM.y);
+	highlight = INSTANCE_CUSTOM.z;
 }
 void fragment(){
-	if(length(texture(bitmapFont,UV).xyz) < threshold){ discard; }
+	if(length(texture(bitmapFont,UV).xyz) < threshold){ COLOR = vec4(highlight)}
 }"
 
 [resource]

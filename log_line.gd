@@ -6,10 +6,8 @@ class_name log_line
 # var a = 2
 # var b = "text"
 var id : int
-var text_grams 
-var grams
-var grams_types
-var grams_counts
+var text_grams
+var grams_words = PoolStringArray()
 # Called when the node enters the scene tree for the first time.
 #func _ready():
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -19,11 +17,8 @@ var grams_counts
 func set_text_shader(log_material):
 	material = log_material
 	
-func set_text(index,world_grams,world_grams_types,world_grams_counts,max_count,line_grams,text_length):
+func set_text(index,grams,grams_types,grams_counts,max_count,line_grams,text_length):
 	id = index
-	grams = world_grams
-	grams_types = world_grams_types
-	grams_counts = world_grams_counts
 	text_grams = line_grams
 	multimesh = MultiMesh.new()
 	multimesh.mesh = QuadMesh.new()
@@ -52,6 +47,7 @@ func set_text(index,world_grams,world_grams_types,world_grams_counts,max_count,l
 		instance+=1
 		
 	for gram_id in text_grams :
+		grams_words.append(grams[gram_id])
 		var hue = Color.darkgray
 		if grams_types[gram_id] > 0 :
 			"""
@@ -101,7 +97,7 @@ func set_text(index,world_grams,world_grams_types,world_grams_counts,max_count,l
 			word_bright *=  word_bright * 0.5
 			word_bright += 0.5
 			#print(word_bright)
-			hue = Color.from_hsv(float(h%256)/255,word_bright,word_bright )
+			hue = Color.from_hsv(float(h%256)/255,word_bright*0.5,word_bright )
 
 		for c in grams[gram_id].to_ascii():
 			multimesh.set_instance_color(instance,hue)
@@ -118,3 +114,26 @@ func set_text(index,world_grams,world_grams_types,world_grams_counts,max_count,l
 			char_pos+=char_pos_increment_right
 			instance+=1
 	multimesh.visible_instance_count=instance
+
+func highlight(instance):
+	instance -= 16
+	if instance < 0 :
+		return ""
+	var actual_characters = 0 
+	for gram in grams_words:
+		if gram.to_ascii()[0] == 9 :
+			instance -= 3
+		actual_characters+=gram.length()
+		if actual_characters > instance :
+			instance = actual_characters - gram.length()
+			for i in range(instance,actual_characters):
+				var data = multimesh.get_instance_custom_data(i)
+				data.b = 0.4
+				multimesh.set_instance_custom_data(i,data)
+			return gram
+			
+func highlight_all():
+	for instance in range(multimesh.visible_instance_count):
+		var data = multimesh.get_instance_custom_data(instance)
+		data.b = 0.4
+		multimesh.set_instance_custom_data(instance,data)
