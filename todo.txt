@@ -1,0 +1,106 @@
+TODO_NEXT_THING_HERE
+
+GOALS
+	efficiently pull in log data for display
+	search / filtering functionality - exact string match, case insensitive, regex
+	display options for filtering - remove if match/doesn't match, matches bigger / nonmatches smaller?
+	gatherlines fuzzy filtering
+	summary bitmap to the right like in Sublime? what's fastest means to do this? write textures directly?
+	supervised parsing / pattern recognition, anotate lines with timestamps, extracted values
+	display options based on pattern groups
+	unsupervised pattern extensions, categorization
+
+	unicode support
+
+TODO - add hex / unicode decoding options - file
+TODO - add hex / unicode decoding options - line
+TODO - add hex / unicode decoding options - word
+
+TODO - add ability to select font / font types for viewing
+TODO - font type for latin-1 
+TODO - font type for US-ASCII + hex
+TODO - font for Unicode Support
+		2021-07-23
+		how to approach exactly?
+		unicode has 1,112,064 code points total.. essentially 2^20 + 2^16. is a lot of code points.
+		Mostly initially need few language plans though - english, latin-A, emoji.
+		bare numbers - at 8x12, a 2kx2k texture could contain 256 across and 170 down.. maybe make 8x16 for 128 down? 
+		256*170 = 43,520, 256*128 = 32K chars or make 16x16 - 128*128 = 16K chars ( would need 68 such maps, but only 4 to get started and 16x16 should be enough resolution for most glyphs)
+		Maybe just use larger texture? 4Kx4K would mean 64K char in one shot. 17 textures, probably less considering PUA and such.
+		possibly could compile 3 such textures into 1 using RGB for different sets of glyphs - going any deeper would cause issues with the SDF blending.. 
+		that takes it to 6 source textures, 4kx4k.. butt.. 4kx4k still likely way too big to be sure OK on all systems.. so do 2kx2k only, so would need ~24 or so ( to do _all_ of the things)
+		possibly make as smaller textures and combine what is needed at run time - isn't so likely all code points needed at same time?
+
+		2k / 16 = 128 - 7 bits across x 7 bits down OK
+		UTF
+		Start 	rows 	label
+		map 00
+				  00 	US-ASCII 									1 byte UTF-8
+		0xC2-3	  01 	Latin-1 									2 byte UTF-8
+		0xC4-5 	  02 	Latin Extended-A 
+		0xC6-7	  03 	Latin Extended-B
+		0xC8-9	  04  	Latin Extended-B / IPA
+		0xCA-B	  05 	IPA
+		0xCC-D 	  06 	Accents //lordy that's gonna be a mess...
+		0xCE-F 	  07 	Greek
+		0xD0-1 	  0A 	Cyrillic
+		0xD2-3	  0B 	
+		0xD4-5	  0C	Cyrillic / Armeni
+		0xD6-7	  0D 	Hebrew
+		0xD8-9 	  0E 	Arabic
+		0xDA-B 	  0F 	Arabic
+		0xDC-D 	  10 	Syriac / Arabic
+		0xDE-F 	  11 	Thana / N'Ko
+		0xE0 	  12-1F	INDIC										3 byte UTF-8 ( < 64K - 4096 chars start code / 32 rows per start code, except 0xE0 - everything up to here could be overlong encoded if using 0xE0)
+		0xE1 	  20-3F	MISC
+		0xE2	  40-5F	Symbol
+		0xE3 	  60-7F	Kana
+
+		map 01
+		0xE4-7	  00-7F	CJK
+
+		map 02
+		0xE8-9	  00-3F	CJK
+		0xEA	  40-5F	Asian
+		0xEB	  60-7F	Hangul
+
+		map 03
+		0xEC-D	  00-3F	Hangul
+		0xEE	  40-5F	PUA		//private use area... 
+		0xEF 	  60-7F	Forms 										end of the first ~64K characters.. so far I would only populate some rows in 00 for myself.. 
+
+		4 byte UTF-8 - 131,072 chars per start byte, 8192 (2^13 -2 sets of 4 octals ) chars per start byte + nibble - 64 rows per .. Emoji are at ~0x1F 600 -  o37 1400 .. 923 - 1001 0010 0011 - 100 100 100 011 - 44 43  
+		4096 chars is 1 map but also is 4 octal digits.. 
+		first codepoint here is o020 0000 last is o417 7777 - giving decimal 16x -> 47x -> the other 64 additional maps.
+		Emojis would then be on map 37+4 = 41 .. ! 41 maps in.. wow .. implementing that would make a lot of sense though.. various symbols at hex 26xx too.. oh, those are in map 0. lol.. is that all I need then?
+		https://github.com/topics/emoji-font
+
+		hmmm...maybe best to add support by allowing external images to be added with mapping options, like glyph size, arrangement, etc.. possibly allow for non-contiguous regions?
+
+
+TODO - supervised categorization / patterns / identifiers
+TODO - allow search using JSON parsed variables
+
+TODO - unsupervised categorization of lines
+TODO - unsupervised linking of lines based on categorization patterns / shared identifiers
+TODO - unsupervised linking of lines based on proximity and occurence patterns
+
+
+TODO - improve memory usage for ingested raw log file
+	2021-07-24 - is not needed to store tokenization for each log line exactly - could always re-tokenize the line as needed.. 
+				Hypothetically, the bare minimum needed to store and be performant is the byte offset into the file where each line starts - for a 256MB file, this would take about 4MB ( 32bit int offsets ).
+				Support for >4GB files can be added by having an array of these lists of offsets, 1 element for each 4GB section of the file, up terrabytes if needed... not really practical issue though?
+				the offsets are expected to take 1/64th the size of the file itself... 4GB/64 - 1GB/16 - 64MB of offsets for 4GB of text... so 16*4GB = 64GB would use 1GB RAM just for this.. craziness...
+				So setting limit of 4GB initially but noting ways around it.. 
+
+				Next would be to store a bitmap for each line that indicates where the tokens end - this would take 1 bit per byte of the line, so optimally 1/8th of the file .. 256MB file -> 32MB for token bitmap... + ~4MB expected for line offsets - 36MB to index the lines/tokens.. should be fine, depends on OS disk cache to work fast here, or suck in the file to RAM as-is. all good..
+
+TODO - add word/line tracking, filtering by words/lines options
+	2021-07-14 - need to track lines count for the words, the word string itself, and at least first_line, last_line seen in.. but doing a raw string search for filtering beyond that can be pretty fast.
+				So a good initial implementation to start with might be to stash the range of lines and count and scan the lines again.. 
+				every string from the file could be stored as ( byte offset first seen at, byte length ), but that's really pushing it... just stash somewhere in RAM...
+
+				Scanning line can be accelerated using the offset/length data - for each line in the range, scan the bitmap for strings matching the length, and then check the bytes of the file at that point.
+				First instance of the word is enough to filter it in/out ... marking the word itself as being the search term would allow the display code to pick that up to do highlighting or whatever.
+
+				Without a token bitmap, can construct suffix tree and do optimized search.  

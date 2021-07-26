@@ -101,12 +101,15 @@ func set_text(index,grams,grams_types,grams_counts,max_count,line_grams,text_len
 
 		for c in grams[gram_id].to_ascii():
 			multimesh.set_instance_color(instance,hue)
-			if c > 31 :
-				c-=32
+			if	c < 127:
+				if c > 31 :
+					c-=32
+				else :
+					if c == 9 :
+						char_pos+=char_pos_increment_right*3
+					c = 95
 			else :
-				if c == 9 :
-					char_pos+=char_pos_increment_right*3
-				c = 0
+				c = 95				
 			u = float(c % 16)/16.0
 			v = float(c / 16)/6.0
 			multimesh.set_instance_custom_data(instance,Color(u,v,0,0))

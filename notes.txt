@@ -1,0 +1,366 @@
+    for words that are a single unicode code point, I could just store the UTF-8 of the char.. for words of 2+characters that are 3 bytes or less in total, I could use an invalid UTF start code and just list out the UTF-8 of the word - say 0xF5 for 2 char, and 0xF6 for 3 character.. then for words that would be 4+ bytes as UTF-8, I encode as uint32, starting with a byte F7 - so on little endian machine the id would be 0x _ _ _ F7- you'd shift >> 8 to get effectively a 24-bit word id ..
+    if there's more than ~16.7 million words to index, I'll figure something else out
+    
+well.. 1,112,064 words char-length=1  + 2^18 words char-length = 2 (byte length <4), 2^21 words char-length = 3 (byte length<4) + 2^24 words byte-length>=4. so... up to 20,248,576 words.. in 4 bytes or less each, with 2-3 char words having worse case +1 byte to represent them, and 4+ byte words being represented by only 4 bytes.. 
+
+
+UTF-8 invalid bytes - 
+2   C0,C1 - overlong ASCII encodings
+9   F5-5D - out of range for unicode
+2   FE,FF - don't match any allowed character pattern
+13 total
+
+word categories/encoding
+prefix additional total     delta range     words
+[]      1-4         1-4     0                   1,112,064   word contains 1 UTF-8 character - 1 to 4 bytes 
+F5      2-4         4       +1                ~272.5M   word contains 2-4 bytes - ASCII/ASCII(2^14)  3 ASCII characters, ASCII/2-byte (128*1920), 2-byte/ASCII (1920*128)   4x ascii (2^28), ascii/3 (7864320), 2/2 ( 3686400 ), 3/ascii ( 7864320 )
+all values of words up to 4 bytes exactly represented, at cost up to +1 byte
+F6      4           4       0,-11               2^32         word contains 5-16 bytes of characters
+F7      4           4       -12,-43             2^32         word contains 17-48 bytes of characters
+F8      4           4       -44,-107            2^32         word contains 49-112 bytes of characters
+F9      4           4       -108, -235          2^32         word contains 113-240 bytes of characters
+FA      8           9       -232,?              2^64         word contains > 240 bytes of characters
+FB      5+           6+           ()()         (0xFB * x) + (0xF6-0xFA) - secondary ranges for these
+FC      unused/reserved..
+FD      reserved for simple wild card for patterns
+FE      reserved for identified variable identifiers for patterns
+FF      reserved for sentinel/end of data
+
+C0      padding/ignore - using padding, can align words to 32-bit boundaries - sorta defeats purpose? will have to see what memory usage looks like without padding.
+C1      padding/ignore next - next byte is #bytes after to ignore -1 ( so 0-255 encoding 1-256 )
+
+5 bytes UTF-8
+5 ASCII - 128^5 - 34359738368 ( 2^35 )
+ASCII / 4 BYTE  -   268435456
+2/3             -   134217728
+3/2             -   134217728
+4/1             -   268435456
+                - 35,165,044,736
+
+word_id -> word_data lookup
+1-4 byte words - 4 byte index static for each ~ 1G. lots of range would be unused between 128 and end of UTF-8... bucket by first byte ( ignoring F5 here) - 194 buckets * 4 byte index = 776 bytes
+or just static sparse array - 0x00 to 0xC1 then 0xF6 to 0xFA populated, index into bucketed tree data? - basically 1K static alocation for _all_ words. single-char is very direct here
+
+word -> word_id look up
+1-4 bytes = exact word_id is known from the UTF-8 of the word itself.
+5+ bytes - bounce through tree of word_data?
+
+
+    struct WordDataHeaderSmall { //32 bit indexes directly to data, only used for byte_length <=4
+        byte    char_data[4]    //  raw char_data                                                                                   4       4
+        uint    left;           // 'tree lookup' ordered by - char_data, unused bytes padded 0xFD                                   4       8
+        uint    right;          //                                                                                                  4       12
+        uint    moreDataPtr;   //   indexes into linesData, anotated, etc arrays                                                    4       16
+        }
+
+
+struct WordLookup {
+    struct WordDataHeaderFivePlusBytes {
+        short uint    sentinel = 0xFFFF;                                                                                            //      2
+        byte    char_length;    // 256 char words should be enough for anyone                                                       1       3
+        byte    byte_length;    // well. if they're all 4 byte UTF code points, then really the limit is 64 char words..            1       4
+        uint    left;           // 'tree lookup' ordered by - (char_length,byte_length,char_data)                                   4       8
+        uint    right;          //                                                                                                  4       12
+        uint    linesDataPtr;   //                                                                                                  4       16
+        byte    char_data[16];  //                                                                                                  16      32
+        }
+    struct WordDataContinued {
+        byte    char_data[32];
+        }
+    }
+}
+
+word-> word id lookup
+single UTF-8 char   start from (0x00 - 0x7F, 0x0C2 - 0xF4 ) (>64 unused indices), go through char_length_1_data_chunks - 16bytes each word, word = word_id
+<=4 4 bytes - start from 0xf5, go through byte_length_less_equal_4_data_chunks - 16bytes each word, word = word_id
+5-240 bytes - start from 0xF6 - 0xF9, go through corresponding data chunks. <=16 bytes - index (32b) (<=11 waste), <=48 bytes - index << 1 (64b) (<=31 waste), <=112 bytes - index << 2 (128b) (<=63 waste), <=240 bytes << 4 (256b) (<=127 waste)
+>240 bytes - start from 0x5A, go through HUGE data chunks, index << 1 (<=63 waste, but indexes chewed through)
+initially 6 sets of chunks
+
+What about the continuation chunks? Since they aren't valid UTF-8 start bytes either..  0x80 - 0xBF = 64 additional spaces... 
+for byte_length = 4 case, there are only 2^28 4 char, 3 char - 2^14*1920, 2^7*1920*2^7,1920*2^14, 2 char - 2^7*2^16,2^16*2^7 2^16*2^16 - ~4674551808
+wait.. 
+byte_length = 3, char length = 3 - ascii,ascii,ascii - 2^21                  - 0x80 - 0x9F - 3 bytes    +0
+byte_length = 3, char length = 2 - ascii,2B - 2^18                           - 0xA0 - 0xA3 - 3 bytes    +0
+byte_length = 3, char length = 2 - 2B,ascii - 2^18                           - 0xA4 - 0xA7 - 3 bytes    +0
+
+byte_length = 4, char length =4 ( needs 2^28 ) - 0xB0 - 0xBF .. bit pack, done.  ( 4 bytes!)            +0
+
+byte_length = 4, char length = 2 - 2B,2B - 2^11*2^11 - 2^22                  - 0xA8 +1bit  - 4 bytes    +0
+byte_length = 4, char length = 2 - 1B,3B - 2^7*2^16 - 2^23                   - 0xA9 +0bit  - 4 bytes    +0
+byte_length = 4, char length = 2 - 3B,1B - 2^16*2^7 - 2^23                   - 0xA9 +1bit  - 4 bytes    +0
+
+byte_length = 4, char length = 3 - ascii,ascii,0x[CD]? - 2^7*2^7*2^11 = 2^25 - 0xAA - 0xAB - 4 bytes    +0
+byte_length = 4, char length = 3 - ascii,0x[CD]?,ascii -                     - 0xAC - 0xAD - 4 bytes    +0 
+byte_length = 4, char length = 3 - 0x[CD]?,ascii,ascii -                     - 0xAE - 0xAF - 4 bytes    +0  // <=4 bytes fully repped, and only 2 char in 2 bytes at +1 byte.. worse case - +50%
+
+byte_length  x*16+? -                                                          0xBx + 3b ID - 4 bytes    +1,-251 // best case? 5/256th ~ -96%   // up to 16.7 million for each grouping of 16b length
+byte_length  5+                                                                0xC0 + 3b ID - 4 bytes    +4,-247 // 16.7 million for over flow
+byte_length  5+                                                                0xC1 + 3b ID - 4 bytes    //16.7 million for over flow
+
+0xF5 - 0xFE - wildcard stuff
+0xFF - sentinel / end of data / packing byte
+
+
+would need an alphabetical / searchable list for UI anyway, so word -> word ID info maybe should be some sort of char/string tree ? might be smaller.. 
+
+// I have a string, give me word ID / info - ternary search?
+struct WordTrieNode {
+    uint four_bytes_word_code; //4 interpret up to 4 chars / 4 bytes at a time as sub-word for comparison ... raw bytes??? - pad short values ie 0xFF FF FF 20 - for space. . 
+    uint left;                 //4  8
+    uint right;                //4  12
+    uint down;                 //4  16
+    uint end;                  //4  20 <--ehh.. kinda cache OK.. can be better?
+    }
+
+
+// I have a string, give me word ID / info - b+/ternary tree
+    struct WordTrieNodeKey {
+        uint key;  //4 bytes of word (raw)
+        uint down;  //4  8 <- match key, go to next level to find next match
+        uint end; //4   12 - if this is end of the word, this is the word_id / index to data
+        }
+
+struct WordTrieNode {
+    WordTrieNodeKey key1;   // 12
+    uint nextA; //             4    16  looking for x where key1 < x < key2
+    WordTrieNodeKey key2;   // 12   28
+    uint nextB;             // 4    32
+    WordTrieNodeKey key3;   // 12   44
+    uint nextC;             // 4    48
+    WordTrieNodeKey key4;   // 12   60
+    uint nextD;             // 4    64
+    }
+
+at deepest level, words are in "alphabetical order" ( shorter words first, per byte comparison ).. should be Big Endian to ensure works proper
+
+could still implement the 1K 'start buffer', or even expand it???
+
+UTF-8 lookup speed buffer (start char code) - ( 4 bytes for each of the 1,112,064 valid unicode char code points) ~4.25MB
+
+I have word ID -> give me string, data
+<=4 bytes -> word ID decodes to byte string, for data need to dive into tree.. WordTrieNode tree is too much for this.. but could use chunked WordDataHeaderSmall just fine. 
+this also implies <=4 bytes handles using just WordDataHeaderSmall chunk tree - 16B base data per word. not bad.
+
+That means WordTrieNode tree root would have no possibility for "end", as its used only for sequences of bytes length >=5 .. with the word_id being an index directly to some data chunk, we only have to worry about speeding up the lookup of the string itself and insertion into the TrieNodeTree 
+
+struct WordTrieNodeRootKey {
+    uint down;
+} // 4B
+
+And we could utilize the root to be a fast start into the space by first checking the first 2 bytes of the word and shoving off -> 
+struct WordTrieNodeRoot {
+    WordTrieNodeRootKey roots[2^16]
+}// 2^16 * 4 = 64k * 14 = 256k  
+
+struct WordDataHeaderTiny {
+    uint    moreDataPtr;
+    }//4B 
+
+WordDataHeaderTiny  SingleByteWords[128]; // 512B fixed size
+
+WordDataHeaderSmall *SmallWordDataChunks[2^16]; //512K on 64bit system, by first 2 bytes, encoded.
+
+(uint, uint)    EncodeWord(byte[] char_data, byte_length, char_length){
+    uint word_code = 0;
+    uint code_length = 4;
+    switch(byte_length){
+        case 1 :
+            word_code = char_data[0]; code_length = 1;
+            //update moreDataPtr stuff if needed;
+            return (word_code, code_length);
+        case 2 :
+            if (char_length == 1){ word_code = char_data[0] << 8 + char_data[1]; code_length = 2; }
+            else { word_code = 0xA80000 + char_data[0] <<8 + char_data[1]; code_length = 3; }
+            goto CHECK_SMALL_CHUNKS
+        case 3 :
+            code_length = 3;
+            switch(char_length){
+                case 1:
+                    word_code = char_data[0] << 16 + char_data[1] << 8 + char+data[2];
+                    break;
+                case 2:
+                    if(char_data[0] < 128){ word_code = 0xA00000 + char_data[0] << 11 + (char_data[1] & 0x1F) << 6 + char_data & 0x3F; }
+                    else { word_code = 0xA00000 + ( char_data[0] & 0x1F ) << 13 + ( char_data[1] & 0x3F ) << 7 + char_data[2]; }
+                    break;
+                case 3:
+                    word_code = 0x800000 + char_data[0] << 14 + char_data[1] << 7 + char_data[2]; code_length = 3;
+                }
+            goto CHECK_SMALL_CHUNKS
+        case 4 :
+            code_length = 4;
+            switch(char_length){
+                case 1:
+                    word_code = char_data[0] << 24 + char_data[1] << 16 + char_data[2] << 8 + char_data[3];
+                    break;
+                case 2:
+                    if(char_data[0] < 128){ // ascii + 3 byte UTF
+                        word_code = 0xA9000000 + char_data[0] << 16 +  ( char_data[1] & 0xF ) << 12 + ( char_data[2] & 0x3F) << 6 + char_data[3] & 0x3F ;
+                    }
+                    else if(char_data[0] < 0xE0 ){ //2 byte UTF + 2 byte UTF
+                        word_code = 0xA8800000 + ( char_data[0] & 0x1F ) << 17 + ( char_data[1] & 0x3F ) << 11 + ( char_data[2] & 0x1F) << 6 + char_data[3] & 0x3F ;
+                    }
+                    else { //3byte UTF + ascii
+                        word_code = 0xA9800000 + ( char_data[0] & 0xF ) << 19 + ( char_data[1] & 0x3F ) << 13 + ( char_data[2] & 0x3F ) << 7 + char_data[3]; 
+                    }
+                    break;
+                case 3:
+                    if(char_data[0] > 127 ){ // 2 1 1
+                        word_code = 0xAE000000 + ( char_data[0] & 0x1F ) << 20 + ( char_data[1] & 0x3F ) << 14 + char_data[2] << 7 + char_data[3]; 
+                    }
+                    else { // 1 ? ?
+                        if(char_data[1] < 128){ // 1 1 2
+                            word_code = 0xAA000000 + char_data[0] << 18 + char_data[1] << 11 + ( char_data[2] & 0x1F ) << 6 + ( char_data[3] & 0x3F ); 
+                        }
+                        else {  // 1 2 1
+                            word_code = 0xAC000000 + char_data[0] << 18 + ( char_data[1] & 0x1F ) << 13 + ( char_data[2] & 0x3F ) + char_data[3]; 
+                        }
+                    }
+                    break;
+                case 4:
+                    word_code = 0xB0000000 + char_data[0] << 21 + char_data[1] << 14 + char_data[2] << 7 + char_data[3];
+            }
+        CHECK_SMALL_CHUNKS:
+            //check SmallWordDataChunks if exist already / update if needed
+            break;
+
+        default:
+            // search starting at WordTrieNodeRootKey roots[2^16] - does this word exist already?
+            if(found){
+
+            }
+
+            // need to add word to list
+            // byte_length > 4 - start with 0xBx + 3b ID for length = x*16+?, then 0xC0 + 3b ID, then finally 0xC1 + 3b ID
+            if( BigWordsBySizeStart[ byte_length / 16 ] < 2^24 ) {
+                //insert here 
+            }
+            else if(OverflowA < 2^24){
+                //insert here
+            }
+            else if(OverFlowB < 2^24){
+                //insert here
+            }
+            else {
+                // die, i guess... I dunno.. think of something.. quick man!!!!! you've gone through at least 50 million words to get to this point. Take a break.. 
+            }
+
+    }
+    return ( word_code, code_length )
+}
+
+(WordDataHeaderSmall*,WordDataHeaderFivePlusBytes_index) FetchWordData(uint word_id){
+    if(word_id < 0x
+    }
+}
+
+OK... One last take on these codes - so far have this -
+byte_length = 3, char length = 3 - ascii,ascii,ascii - 2^21                  - 0x80 - 0x9F - 3 bytes    +0
+byte_length = 3, char length = 2 - ascii,2B - 2^18                           - 0xA0 - 0xA3 - 3 bytes    +0
+byte_length = 3, char length = 2 - 2B,ascii - 2^18                           - 0xA4 - 0xA7 - 3 bytes    +0
+byte_length = 4, char length =4 ( needs 2^28 ) - 0xB0 - 0xBF .. bit pack, done.  ( 4 bytes!)            +0
+byte_length = 4, char length = 2 - 2B,2B - 2^11*2^11 - 2^22                  - 0xA8 +1bit  - 4 bytes    +0
+byte_length = 4, char length = 2 - 1B,3B - 2^7*2^16 - 2^23                   - 0xA9 +0bit  - 4 bytes    +0
+byte_length = 4, char length = 2 - 3B,1B - 2^16*2^7 - 2^23                   - 0xA9 +1bit  - 4 bytes    +0
+byte_length = 4, char length = 3 - ascii,ascii,0x[CD]? - 2^7*2^7*2^11 = 2^25 - 0xAA - 0xAB - 4 bytes    +0
+byte_length = 4, char length = 3 - ascii,0x[CD]?,ascii -                     - 0xAC - 0xAD - 4 bytes    +0 
+byte_length = 4, char length = 3 - 0x[CD]?,ascii,ascii -                     - 0xAE - 0xAF - 4 bytes    +0  // <=4 bytes fully repped, and only 2 char in 2 bytes at +1 byte.. worse case - +50%
+byte_length  x*16+? -                                                          0xBx + 3b ID - 4 bytes    +1,-251 // best case? 5/256th ~ -96%   // up to 16.7 million for each grouping of 16b length
+byte_length  5+                                                                0xC0 + 3b ID - 4 bytes    +4,-247 // 16.7 million for over flow
+byte_length  5+                                                                0xC1 + 3b ID - 4 bytes    //16.7 million for over flow
+0xF5 - 0xFE - wildcard stuff
+0xFF - sentinel / end of data / packing byte
+
+for ordering by codes, it would be (UTF-8 string, char length) order.. which ends up that uppercase is before lower, and it cycles by language, etc.. so 0x21 (!) 0x41 (A) comes before 0x61(a) comes before 2 byte UTF sequences.. etc. 
+to do 2 ascii in 2 bytes needs 6 bits borrow from prefix byte... hmmm
+                combo   bits        hex                total   total
+chars   bytes           prefix      prefix  codebits    bits    bytes   encoding
+1       1               0                      7          8        1   data_char[0]
+1       2       Latin1  10000000    0x80       8         16        2   0x8000 + (data_char[0] & 0x3) << 6 + (data_char[1] & 0x3F)
+1       2       L-E-AB  10000001    0x81       8         16        2   0x8100 + (data_char[0] & 0x3) << 6 + (data_char[1] & 0x3F)
+1       2       IPA-E   10000010    0x82       8         16        2   0x8200 + (data_char[0] & 0x3) << 6 + (data_char[1] & 0x3F)
+1       2       A/Greek 10000011    0x83       8         16        2   0x8300 + (data_char[0] & 0x3) << 6 + (data_char[1] & 0x3F)
+1       2       Cyril   10000100    0x84       8         16        2   0x8400 + (data_char[0] & 0x3) << 6 + (data_char[1] & 0x3F)
+1       2       C/A/H   10000101    0x85       8         16        2   
+1       2       Arabic  10000110    0x86       8         16
+1       2       S/A/T/N 10000111    0x87       8
+1       3       BMP     10001000    0x88      16         24        3   0x880000 + (data_char[0] & 0x0F) << 12 + (data_char[1] & 0x3F) << 6 + (data_char[2] & 0x3F)
+1       4               10001001    0x9       20         24        4   0x900000 + (data_char[0] & 0xF) << 18 +  (data_char[1] & 0x3F) << 12 + (data_char[2] & 0x3F) << 6 + (data_char[3] & 0x3F) 
+2       2               11xxxxxx    0xC       14         16        2   0xC000 + data_char[0] << 7 data_char[1]   //nul and SOH would alias for 0x80 start byte, cause issue?
+2       3       1,2     100011xx    0x89      18         24        3
+2       3       2,1     100100xx    0xC       18         24        3
+2       4       2,2     10010100    0xC4                 22        4
+3       3       a,a,a   10010101    0xC5      21         32        3
+3       4       a,a,2   1001011x    0xC6      25         32        4
+3       4       a,2,a   1001100x
+3       4       2,a,a   1001101x
+4       4       a,a,a,a 1010xxxx              28         40        4  // I am a mad lad.. I had to sacrifice single-char UTF being readable as-is, but all 1-4 byte UTF-8 strings repped with no added bytes with 2^28 values left for 32bit
+5+      5+              1011xxxx              28         32        4  // all the above + 2^28 4byte codes. woot.
+
+OK that was fun. Let's not talk about this. ever. Just store the strings in a tree and re-tokenize the line as needed to locate info. tokenizing a line isn't that slow. Mangling all these bits feels like it maybe slower.
+At least try the simpler thing first.
+
+struct YeOldTRIEandTRUEtreeNodeUnit {
+    uint down;//  go deeper!!!                      4
+    uint end; //  points to WordData somewhere      8
+}//8B
+
+struct YeOldTRIEandTRUEtreeNode {
+    fixed YeOldTRIEandTRUEtreeNodeUnit  units[256];
+}//2KB
+
+struct YeOldTRIEandTRUEtreeChunk {
+    fixed YeOldTRIEandTRUEtreeNode    nodes[256];
+}//512KB
+
+YeOldTRIEandTRUEtreeChunk *YeOldTRIEandTRUEtree[2^16]
+
+struct WordData {
+    uint count;//                16
+    uint first_line;//           20
+    uint last_line;//            24
+    uint line_data; //           28
+    uint that_something_extra;// 32
+    }
+
+struct WordDataChunk {
+    fixed WordData nodes[2^16]
+}//64k*32B = 2M
+
+WordDataChunk * WordDataChunks[2^16]; // 64k * 8 = 512K on 64 bit machine...
+
+// fetch is O(n) where n = length of word in bytes ...
+(uint,WordData) FetchWordData(byte []char_data, int byte_length, bool add_if_missing = true){
+    uint trie_chunk = 0;
+    uint trie_node = 0;
+    uint next = 0
+    YeOldTRIEandTRUEtreeChunk *chunk;
+    for(int i=0; i<byte_length-1; i++){
+        chunk = YeOldTRIEandTRUEtree[trie_chunk];
+        next = chunk.nodes[trie_node][char_data[i]].down;
+        if( next == 0) {
+            //not found.. need to build out and add
+        }
+        trie_chunk = next >> 16;
+        trie_node  = next & 0xFFFF;
+    }
+    chunk = YeOldTRIEandTRUEtree[trie_chunk];
+    next = chunk.nodes[trie_node][char_data[i]].end;
+    if(next == 0) {
+        // not found, can just add here
+    }
+
+    return (next, WordDataChunks[next >> 16][next & 0xFFFF ]);
+}
+
+//tree extends in 2M chunks of 2^16 nodes, each node is 2KB .. Strings go through 1 node per byte of length. 
+//so nodes that are shared among many words are more efficient.. 
+//this could later become something else though - a real b+ tree maybe.. 
+c0n0 - a -> c0n1 b -> c0n2 c -> c0n3 d -> c0n4 e -> c0n5 f ... // through f effectively 16K used for this 1 string... 
+       c -> c0n6 a -> c0n7 b ...   //+4K
+                   -> c0n7 d ...   //+0K
+                   -> c0n7 f -> c0n8 e ... //+2K
+
+word_data -> lines word is in 
+bitmap? b+ tree? 
+
