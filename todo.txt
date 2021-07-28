@@ -95,6 +95,94 @@ TODO - improve memory usage for ingested raw log file
 
 				Next would be to store a bitmap for each line that indicates where the tokens end - this would take 1 bit per byte of the line, so optimally 1/8th of the file .. 256MB file -> 32MB for token bitmap... + ~4MB expected for line offsets - 36MB to index the lines/tokens.. should be fine, depends on OS disk cache to work fast here, or suck in the file to RAM as-is. all good..
 
+	2021-07-27 	started C# coding.. already feels like I need to refactor / simplify the decoder for UTF-8 fallback to US-ASCII / HEX . 
+				as each RAW byte comes in, it can form a code point of 1 to 4 bytes length..
+				START
+				RAW1 from file
+				RESTART:
+				if RAW1 in US_ASCII :
+					process RAW1 as char_ascii
+				elif RAW in UTF_CONTINUATION :
+					process RAW1 as char_continuation
+				elif RAW1 in UTF_TWO_BYTE_START :
+					if RAW2 in UTF_CONTINUATION :
+						process RAW1-2 as char
+						goto START
+					else :
+						process RAW1 as char_two_start
+						RAW1 = RAW2
+						goto RESTART
+				elif RAW1 in UTF_THREE_BYTE_START :
+					if RAW2 in UTF_CONTINUATION :
+						if RAW3 in UTF_CONTINUATION :
+							process RAW1-3 as char
+							goto START
+						else :
+							process RAW1 as char_three_start
+							process RAW2 as char_continuation
+							RAW1 = RAW3
+							goto RESTART
+					else :
+						process RAW1 as char_three_start
+						RAW1 = RAW2
+						goto RESTART
+				elif RAW1 in UTF_FOUR_BYTE_START :
+					if RAW2 in UTF_CONTINUATION :
+						if RAW3 in UTF_CONINUATION :
+							if RAW4 in UTF_CONTINUATION :
+								process RAW1-4 as char
+								goto START
+							else :
+								process RAW1 as char_four_start
+								process RAW2 as char_continuation
+								process RAW3 as char_continuation
+								RAW1 = RAW4
+								goto RESTART
+						else :
+							process RAW1 as char_four_start
+							process RAW2 as char_continuation
+							RAW1 = RAW3
+							goto RESTART
+					else :
+						process RAW1 as char_four_start
+						RAW1 = RAW2
+						goto RESTART
+				else :
+					process RAW1 as char_invalid_start
+
+				Think I will leave unicode support out for now, and just assign values >126 as their own char type.. that would give me as character types - 
+				Control Codes	0x00 - 0x08, 0x0A - 0x1F , 0x7F 
+				white space		space and tab 0x09 0x20
+				*punctuation		! # $ % & ' * + ~ : ; < = > | ~ 
+				*quotes 			" `
+				*left bracket	( [ {
+				*right bracket 	) ] }
+				*separators 		, . / @ ? ^ _ 
+				digits 			0-9
+				Capital Alpha	A-Z
+				*escape char 	\
+				lowercase alpha	a-z
+				8bit needed		0x80 - 0xFF
+
+				initial line reading would attempt to track quotes and include multiple lines if needed. 
+
+				initial tokenization would group by character type except where starred - runs of these characters would never become their own word
+				secondary tokenization would attempt to combine tokens into known categories ( always going from the left... )
+				JSON object
+				XML object
+				system datetime
+				date
+				time
+				email address
+				URI
+				path
+				hostname
+				number
+
+				tokens identified as these secondary types will also be pushed to anotated formats? - quoted values, JSON and XML objects 
+					date/times can be converted to timestamps, numbers can be added as float values, etc - for filtering operations later.
+				they'd be especially useful once the unsupervised patterns come into play, but having them visible for filtering should help some there..  
+
 TODO - add word/line tracking, filtering by words/lines options
 	2021-07-14 - need to track lines count for the words, the word string itself, and at least first_line, last_line seen in.. but doing a raw string search for filtering beyond that can be pretty fast.
 				So a good initial implementation to start with might be to stash the range of lines and count and scan the lines again.. 
@@ -104,3 +192,4 @@ TODO - add word/line tracking, filtering by words/lines options
 				First instance of the word is enough to filter it in/out ... marking the word itself as being the search term would allow the display code to pick that up to do highlighting or whatever.
 
 				Without a token bitmap, can construct suffix tree and do optimized search.  
+

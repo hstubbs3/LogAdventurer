@@ -1,0 +1,183 @@
+using Godot;
+using System;
+
+public class log_file : Node
+{
+
+	[Export]
+	public uint read_lines_frame = 2;
+	[Export]
+	public float target_delta = 0.1;
+	[Export]
+	public string file_name = '';
+
+	unsafe 
+	{
+		[StructLayout(LayoutKind.Explicit)]
+		struct LineDataHeader
+		{
+			[FieldOffset(0)]
+			public byte	sentinel = 255; //										1B 		 
+			[FieldOffset(1)]
+			public fixed byte word_ends[7]; //	bitset of where each word ends	7B		 8
+			[FieldOffset(8)]
+			public uint byte_length; //	length of this line, in total bytes 		4B 		 12
+			[FieldOffset(12)]
+			public fixed byte bytes[52];		//	raw file data 					52B 		 64
+		}
+
+		[StructLayout(LayoutKind.Explicit)]
+		struct LineDataContinued
+		{
+			[FieldOffset(0)]
+			public byte flags = 0;//whatever this value is, at least 1 bit must be 0
+			[FieldOffset(1)]
+			public fixed byte word_ends[7];
+			[FieldOffset(8)]
+			public fixed byte bytes[56];
+		}//64 bytes
+		
+		[StructLayout(LayoutKind.Explicit)]
+		struct LineData 
+		{
+			[FieldOffset(0)]
+			public LineDataHeader header;
+			[FieldOffset(0)]
+			public LineDataContinued data;
+		}		
+	}
+		
+	class LineDataChunk
+	{
+		LineData		chunk[65536];
+	}//4 M, 3.25 to 3.5M of log data, + ~ 25%
+	
+
+	LinesChunk lines_chunks[256];//supporting raw text files up to 832M in memory...
+	int lines_pointers[2^24]; // up to 16.7M lines .. ( this could be using ~256M if not careful?)
+	int num_lines;
+	
+	File the_log = File.new()
+	bool new_file = true;
+	
+	public override void _Ready()
+	{
+		
+	}
+
+	public bool readlines(uint lines_to_read_max)
+	{
+		uint lines_read = 0;
+		int bytes_left_in_file = the_log.GetLen() - the_log.GetPosition();
+		if( bytes_left_in_file <= 0)
+		{
+			return false;
+		}
+		uint scratch = 0;
+		uint raw = 0;
+		uint mode=0;
+		byte line_buffer[1024*1024]; //1M at a time .. can't be a line more than 1M can there?
+		uint line_bytes_length = 0
+		byte word_buffer[1024*1024]; //1M, can't have a word actually be 1M can you?!!?!
+		uint word_bytes_length = 0
+		uint word_type = 0; 
+		byte line_words_end_buffer[1024*128];//literally 1 bit for each byte above, ok. 128K
+
+		while( lines_read < lines_to_read_max )
+		{
+			while(bytes_left_in_file > 0)
+			{
+				bytes_left_in_file--;
+				raw = the_log.Get8();
+				line_buffer[line_bytes_length] = raw;
+				line_bytes_length += 1;
+				switch(mode)
+				{
+					case 0:
+						if(raw < 0xC2 || raw > 0xF4) // invalid UTF-8 start byte or US-ASCII 
+						{
+							DO_ASCII:
+							//do word stuffs
+						break;
+						}
+						RAW_START:
+						scratch = raw;
+						if(raw < 0xE0) // valid start byte for UTF-8 2 byte code point
+						{
+							mode	 = 1;
+						}
+						else if(raw < 0xF0) // valid start byte for UTF-8 3 byte code point
+						{
+							mode = 2;
+						}
+						else //valid start byte for UTF-8 4 byte code point
+						{
+							mode = 4
+						}
+						break;
+					case 1: //evaluate 2nd byte of 2 byte sequence
+						if(raw < 128) //invalid continuation byte ( US-ASCII)
+						{
+							//process scratch as 1 byte char
+							//process raw as 1 byte char
+							goto DO_ASCII
+						}
+						else if(raw > 0xBF) // invalid continuation byte ( UTF-8 start byte range)
+						{
+							//process scratch as 1 byte char
+							if(raw < 0xF5)
+							{
+								//process raw as 1 byte char
+								goto RAW_START
+							}
+							else 
+							{
+								goto DO_ASCII
+							}
+						}
+						else //valid UTF-8 2 byte code point. 
+						{
+							//do word stuff
+							mode = 0;
+						}
+						break;
+					case 2:
+						
+						break;
+					case 4:
+						break;
+				}
+				if(mode == 0 && scratch == 10) // newline
+				{
+					break;
+				}
+			}
+			//add line data to chunks
+			if( bytes_left_in_file == 0)
+			{
+				break;
+			}
+		}
+		return true
+		
+	}
+	public override void _Process(float delta)
+	{
+		if(file_name == '') { return }
+		if(delta > target_delta && read_lines_frame > 2){ read_lines_frame -= 2 ; }
+		else { read_lines_frame += 1; }
+		if(the_log.IsOpen())
+		{ 
+			if(!readlines(read_lines_frame)){ new_file = false; the_log.close()}; 
+		}
+		else if(new_file)
+			{
+				if(the_log.Open(file_name,File.READ) != 0)
+				{
+					new_file = false;
+					//print an error or something... 
+				}
+			}
+		//further analyses / filtering / etc
+	}
+}

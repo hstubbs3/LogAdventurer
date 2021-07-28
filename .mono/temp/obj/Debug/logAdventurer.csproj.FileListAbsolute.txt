@@ -1,0 +1,8 @@
+/Users/harold.stubbs/git/LogAdventurer/.mono/temp/obj/Debug/logAdventurer.csprojAssemblyReference.cache
+/Users/harold.stubbs/git/LogAdventurer/.mono/temp/obj/Debug/logAdventurer.AssemblyInfoInputs.cache
+/Users/harold.stubbs/git/LogAdventurer/.mono/temp/obj/Debug/logAdventurer.AssemblyInfo.cs
+/Users/harold.stubbs/git/LogAdventurer/.mono/temp/obj/Debug/logAdventurer.csproj.CoreCompileInputs.cache
+/Users/harold.stubbs/git/LogAdventurer/.mono/temp/bin/Debug/logAdventurer.dll
+/Users/harold.stubbs/git/LogAdventurer/.mono/temp/bin/Debug/logAdventurer.pdb
+/Users/harold.stubbs/git/LogAdventurer/.mono/temp/obj/Debug/logAdventurer.dll
+/Users/harold.stubbs/git/LogAdventurer/.mono/temp/obj/Debug/logAdventurer.pdb

@@ -190,7 +190,7 @@ func _process(delta):
 #	$Label.text = String(OS.window_size)+" "+String(rect_size)+" "+String(rect_scale)
 	
 func gramify_string(text):
-	var text_grams = PoolIntArray()
+	var text_grams = Array()
 	var i = -1
 	var last_end = -1
 	var gram_ends = PoolIntArray()

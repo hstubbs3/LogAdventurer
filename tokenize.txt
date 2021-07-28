@@ -1,0 +1,115 @@
+
+	byte line buffer[2**20];//1M
+	uint line_length = 0;
+	byte word_buffer[2**20];//1M
+	uint word_length = 0;
+	uint word_type = 0;
+	uint word_ends[2**20];//4M
+	uint word_types[2**20];//4M
+	uint num_words = 0;
+
+	int bytes_left = length() - position();
+	if(bytes_left <= 0){ return false; }
+	int next_byte;
+	bool end_line = false;
+	bool add_as_word = false
+	while( lines_left )
+	{
+		end_line = false;
+		line_length = 0
+		word_length = 0
+		word_type = 0
+		lines_left--;
+
+		while(bytes_left)
+		{
+			bytes_left--;
+			next_byte = the_log.Get8();
+			line_buffer[line_length] = next_byte;
+			line_length += 1;
+			RECHECK_NEXT_BYTE:
+			switch(next_byte)
+				{
+					case 9:
+					case 32:	//white space, adds
+						if(word_type == 1) { goto TRY_CONTINUE; }
+						if(word_length == 0)
+						{
+							word_type = 1;
+							goto TRY_CONTINUE
+						}
+						goto DO_WORD;
+					case byte n when (n < 32 &&  n != 9 && n != 10 ): //control codes, adds
+						if(word_type == 2) { goto TRY_CONTINUE; }
+						if(word_length == 0)
+						{
+							word_type = 2;
+							goto TRY_CONTINUE
+						}
+						goto DO_WORD;
+					case byte n when ( n < 58 && n > 47): // digits, adds
+						if(word_type == 3) { goto TRY_CONTINUE; }
+						if(word_length == 0)
+						{
+							word_type = 3;
+							goto TRY_CONTINUE
+						}
+						goto DO_WORD;
+					case byte n when (n < 91 && n > 64): //upper case alpha, adds
+					case byte n when (n > 96 && n < 123): // lower case alpha, adds
+						if(word_type == 4) { goto TRY_CONTINUE; }
+						if(word_length == 0)
+						{
+							word_type = 4;
+							goto TRY_CONTINUE
+						}
+						goto DO_WORD;
+					case byte n when (n > 127): // 8bit words
+						if(word_type == 5) { goto TRY_CONTINUE; }
+						if(word_length == 0)
+						{
+							word_type = 5;
+							goto TRY_CONTINUE
+						}
+						goto DO_WORD;
+
+					TRY_CONTINUE:
+						word_buffer[word_length] = next_byte;
+						word_length += 1;
+						break;
+
+					case 10:	// newline
+						end_line = true
+						if(word_length)
+						{ 
+							add_as_word = true;
+							goto DO_WORD;
+						}
+						break;
+					default: // is all puncuation / doesn't add into words
+						add_as_word = true; 			
+					DO_WORD:
+						//add prev word to list
+						word_length = 0;
+						word_type = 0;
+						if(add_as_word)
+						{
+							//add next_byte as its own word...
+							add_as_word = false;
+							break;
+						}
+						goto RECHECK_NEXT_BYTE;
+
+				}
+			if(end_line){ break; } //goto start of loop?
+		}
+		if(word_length)
+		{
+			//add last word to the line
+		}
+		//add the line to the list
+
+		if(bytes_left == 0 ){ return false; }
+	}
+	return true;
+}
