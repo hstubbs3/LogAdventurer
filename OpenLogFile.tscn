@@ -26,7 +26,12 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="LogView" type="Node2D" parent="LogPane"]
+[node name="LogView" type="Control" parent="LogPane"]
+margin_right = 40.0
+margin_bottom = 40.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
 
 [node name="Label" type="Label" parent="LogPane"]
 anchor_left = 1.0

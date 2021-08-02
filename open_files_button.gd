@@ -6,6 +6,8 @@ extends TextureButton
 # var b = "text"
 
 onready var open_log_file = load("res://OpenLogFile.tscn")
+#var open_log_file
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	pass # Replace with function body.

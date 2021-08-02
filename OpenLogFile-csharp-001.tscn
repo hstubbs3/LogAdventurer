@@ -1,6 +1,5 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=3 format=2]
 
-[ext_resource path="res://log_pane-csharp.gd" type="Script" id=1]
 [ext_resource path="res://OpenLogFile-001.gd" type="Script" id=2]
 [ext_resource path="res://close_button.png" type="Texture" id=3]
 
@@ -21,7 +20,6 @@ rect_min_size = Vector2( 30, 30 )
 size_flags_horizontal = 3
 size_flags_vertical = 3
 size_flags_stretch_ratio = 99.0
-script = ExtResource( 1 )
 __meta__ = {
 "_edit_use_anchors_": false
 }

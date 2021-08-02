@@ -2,6 +2,10 @@ TODO_NEXT_THING_HERE
 
 GOALS
 	efficiently pull in log data for display
+		^ This is the first main point. Suck the file in and be as helpful as possible while processing the file further
+
+	allow combined / side by side / etc views for different files.
+	"open as related" ??
 	search / filtering functionality - exact string match, case insensitive, regex
 	display options for filtering - remove if match/doesn't match, matches bigger / nonmatches smaller?
 	gatherlines fuzzy filtering
@@ -193,3 +197,31 @@ TODO - add word/line tracking, filtering by words/lines options
 
 				Without a token bitmap, can construct suffix tree and do optimized search.  
 
+TODO - get back to goal 0 - efficiently pull in log data for display
+	2021-07-30 	-	User experience outline
+				1) Open App
+				2) Open logs to view
+					single log file
+					multiple files of same type / same host
+					multiple files / different types / same host
+					multiple files of same type / different host
+					multiple files of different types / different host
+
+				3) ASAP presented with view of first several lines, options to filter / search / find on raw data only
+					Further, in-depth processing working from centroid of current view, both backwards and forwards
+						if everything in current view / filter is processed, process from centroid of current lines in view
+
+				Processing levels - 
+					Initial ingest - suck the lines in fast, minimal processing - 
+						null-sector locating
+						multi-line logs identified and stored.
+						initial parsing / categorization -
+							check for syslog line start
+					initial time/frequency analysis
+					simple tokenization
+					pattern tokenization
+						supervised categorization / analysis
+
+					unsupervised categorization / analysis
+						JSON object identification / variable yanking
+						variable analysis

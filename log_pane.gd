@@ -54,11 +54,11 @@ func _input(event):
 	if event is InputEventMouseButton :
 		if event.button_index == BUTTON_WHEEL_UP :
 			if event.pressed :
-				$LogView.position.y += 48 
+				$LogView.rect_position.y += 48 
 				view_starts_line -= 4
 		elif event.button_index == BUTTON_WHEEL_DOWN :
 			if event.pressed :
-				$LogView.position.y -= 48 
+				$LogView.rect_position.y -= 48 
 				view_starts_line += 4
 		elif event.button_index == BUTTON_LEFT:
 			if not dragging and event.pressed:
@@ -104,7 +104,7 @@ func _process(delta):
 	rect_size.x = $"..".rect_size.x - 16
 	rect_size.y = $"..".rect_size.y - 16
 
-	name = file_name
+	#name = file_name
 	if log_file != null:
 		if delta < 0.1 :
 			read_lines_frame += 2
@@ -132,10 +132,10 @@ func _process(delta):
 		rect_scale.y=1
 		view_line_height=12.0
 		view_char_width=8.0
-		$LogView.position.x=0
+		$LogView.rect_position.x=0
 	
 	view_starts_line = v_scroll.value
-	$LogView.position.x = -1.0 * h_scroll.value
+	$LogView.rect_position.x = -1.0 * h_scroll.value
 	v_scroll.max_value = index
 	$Label.rect_position.y = rect_size.y - 16
 	$Label.rect_position.x = rect_size.x*0.95
@@ -163,11 +163,11 @@ func _process(delta):
 	elif Input.is_action_pressed("ui_page_down"):
 	#	if view_starts_line + 60 < lines.size():
 			view_starts_line += int(float(rect_size.y)/view_line_height)
-	$LogView.position.y = -12.0*view_starts_line
+	$LogView.rect_position.y = -12.0*view_starts_line
 #	print("view set to start at - ",view_starts_line)
 	
 	v_scroll.value = view_starts_line
-	$LogView.position.x= -1.0*view_char_width*h_scroll.value
+	$LogView.rect_position.x= -1.0*view_char_width*h_scroll.value
 
 	var lines_screen = int(float(rect_size.y)/view_line_height) 
 	while $LogView.get_child_count() > 7 * lines_screen:
@@ -195,7 +195,7 @@ func gramify_string(text):
 	var last_end = -1
 	var gram_ends = PoolIntArray()
 	var is_alphanum = PoolByteArray()
-	var text_bytes = text.to_ascii()		 
+	var text_bytes = text#.to_ascii()		 
 	#print(text)
 	for c in text_bytes:
 		i+=1
@@ -221,7 +221,7 @@ func gramify_string(text):
 	i = 0;
 	for gram_end in gram_ends :
 		var gram = text_bytes.subarray(gram_start,gram_end)
-		var gram_text = gram. get_string_from_ascii()
+		var gram_text = gram.get_string_from_ascii()
 		var gram_id =  grams_index_dict.get(gram_text)
 		if gram_id == null :
 			gram_id = grams.size()
@@ -262,8 +262,14 @@ func loadLog(file = file_name):
 func read_log_lines(max_lines):
 	var end_read_at = index + max_lines
 	while not log_file.eof_reached(): # iterate through all lines until the end of file is reached
-		var text = log_file.get_line()
-		var line_length = text.length()
+		var text = PoolByteArray();
+		var next_byte = 0
+		while (text.size() < 128 or ( next_byte < 127 and next_byte !=32) ) and !log_file.eof_reached():
+			next_byte = log_file.get_8();
+			text.append(next_byte);
+			if next_byte == 10:
+				break
+		var line_length = text.size()
 		lines.append(line_length)
 		if line_length > h_scroll.max_value : h_scroll.max_value = line_length
 		var line_grams = gramify_string(text)

@@ -15,6 +15,8 @@ func _ready():
 #func _process(delta):
 #	pass
 func _pressed():
+	_open_file("/Do_Not_Scan/DirtyCases/01738266/FireEyeCM_000BABFF51BB_logs.1626876920/messages.1")
+	"""
 	print("pressed")
 	var open_file_dialog = FileDialog.new()
 	open_file_dialog.mode = FileDialog.MODE_OPEN_FILES
@@ -23,10 +25,10 @@ func _pressed():
 	open_file_dialog.connect("files_selected",self,"_open_files")
 	add_child(open_file_dialog)
 	open_file_dialog.popup(Rect2(0,0,500,500))
-
+	"""
 func _open_file(path):
 	var new_open_log_file = open_log_file.instance()
-	new_open_log_file.name = path
+	#new_open_log_file.name = path
 	$"../../TabContainer".add_child(new_open_log_file)
 	$"../../TabContainer".set_tab_title($"../../TabContainer".get_child_count()-1,path)
 	new_open_log_file.paste_output = 	$"../../TabContainer/Scratch"
