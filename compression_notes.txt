@@ -1,0 +1,146 @@
+harold.stubbs@20G-F3H5JG5M-375 2021-08-09_1619_45 % ~/git/LogAdventurer/twoByteStartCompressor.py wicadfish_stats_json.txt
+	def __init__(self,lru_capacity=4096,lru_initial_size=524288,lru_grow_by=262144,two_byte_range = 16384): 
+	slice_at = 16
+
+2021-08-18 16:39:10 20G-F3H5JG5M-375 twoByteStartCompressor[68898] INFO length of instream: 1650919, length of outstream: 530287, compression_ratio: 3.113255652127999 with average range: 0.38531452072179784 using bits 13
+2021-08-18 16:39:10 20G-F3H5JG5M-375 twoByteStartCompressor[68898] INFO expected size in bytes <861717, expected total compression ratio: ~1.9158482425204562
+2021-08-18 16:39:10 20G-F3H5JG5M-375 twoByteStartCompressor[68898] DEBUG compress_datastream exiting
+None
+~10 mins
+
+	def __init__(self,lru_capacity=16384,lru_initial_size=131072,lru_grow_by=16384,two_byte_range = 4096): 
+2021-08-18 16:43:06 20G-F3H5JG5M-375 twoByteStartCompressor[69189] INFO LRU initialized.. range_ends[-1]: 2415919105 -  Random BS GO!!!
+2021-08-18 17:09:29 20G-F3H5JG5M-375 twoByteStartCompressor[69189] INFO length of instream: 1650919, length of outstream: 467648, compression_ratio: 3.5302599390994938 with average range: 42593.151772273166 using bits 15
+2021-08-18 17:09:29 20G-F3H5JG5M-375 twoByteStartCompressor[69189] INFO expected size in bytes <876840, expected total compression ratio: ~1.8828053008530632
+
+	def __init__(self,lru_capacity=4096,lru_initial_size=524288,lru_grow_by=262144,two_byte_range = 16384): 
+	slice_at = 32
+
+2021-08-18 17:10:57 20G-F3H5JG5M-375 twoByteStartCompressor[69787] INFO LRU initialized.. range_ends[-1]: 3221225473 -  Random BS GO!!!
+2021-08-18 17:14:43 20G-F3H5JG5M-375 twoByteStartCompressor[69787] INFO length of instream: 1650919, length of outstream: 248526, compression_ratio: 6.642842197597032 with average range: 501567.78007934784 using bits 12
+2021-08-18 17:14:43 20G-F3H5JG5M-375 twoByteStartCompressor[69787] INFO expected size in bytes <372789, expected total compression ratio: ~4.428561465064688
+
+	def __init__(self,lru_capacity=4096,lru_initial_size=524288,lru_grow_by=524288,two_byte_range = 4096): 
+	slice_at = 64
+
+2021-08-18 17:16:45 20G-F3H5JG5M-375 twoByteStartCompressor[69806] INFO LRU initialized.. range_ends[-1]: 2415919105 -  Random BS GO!!!
+2021-08-18 17:17:59 20G-F3H5JG5M-375 twoByteStartCompressor[69806] INFO length of instream: 1650919, length of outstream: 81795, compression_ratio: 20.18361758053671 with average range: 868348.1441163885 using bits 11
+2021-08-18 17:17:59 20G-F3H5JG5M-375 twoByteStartCompressor[69806] INFO expected size in bytes <112469, expected total compression ratio: ~14.678880402599827
+
+	removed log_this from replace_return_lru
+	def __init__(self,lru_capacity=4096,lru_initial_size=524288,lru_grow_by=524288,two_byte_range = 4096): 
+	slice_at = 256
+
+2021-08-18 17:19:22 20G-F3H5JG5M-375 twoByteStartCompressor[69823] INFO LRU initialized.. range_ends[-1]: 2415919105 -  Random BS GO!!!
+2021-08-18 17:20:26 20G-F3H5JG5M-375 twoByteStartCompressor[69823] INFO length of instream: 1650919, length of outstream: 78323, compression_ratio: 21.078342249403114 with average range: 855894.2986351391 using bits 11
+2021-08-18 17:20:26 20G-F3H5JG5M-375 twoByteStartCompressor[69823] INFO expected size in bytes <107695, expected total compression ratio: ~15.329578903384558
+
+compression ratio flattened.. need to improve average range more.. maybe a different mix ..
+	def __init__(self,lru_capacity=4096,lru_initial_size=65536,lru_grow_by=524288,two_byte_range = 256): 
+	slice_at = 64
+
+range_limit issue - overassigned 32bits.. changing and runinng..
+
+2021-08-18 17:40:18 20G-F3H5JG5M-375 twoByteStartCompressor[70176] INFO LRU initialized.. range_ends[-1]: 285212673 -  Random BS GO!!!
+2021-08-18 17:41:13 20G-F3H5JG5M-375 twoByteStartCompressor[70176] DEBUG end stream allowed range of 1048575
+2021-08-18 17:41:13 20G-F3H5JG5M-375 twoByteStartCompressor[70176] INFO length of instream: 1650919, length of outstream: 81795, compression_ratio: 20.18361758053671 with average range: 415736.5104468488 using bits 12
+2021-08-18 17:41:13 20G-F3H5JG5M-375 twoByteStartCompressor[70176] INFO expected size in bytes <122693, expected total compression ratio: ~13.455690218675882
+
+ooo.. used up the range.. nice nice..
+maybe add capacity to LRU
+	def __init__(self,lru_capacity=16384,lru_initial_size=65536,lru_grow_by=524288,two_byte_range = 256): 
+2021-08-18 17:42:57 20G-F3H5JG5M-375 twoByteStartCompressor[70414] INFO LRU initialized.. range_ends[-1]: 1090519041 -  Random BS GO!!!
+2021-08-18 17:45:09 20G-F3H5JG5M-375 twoByteStartCompressor[70414] INFO length of instream: 1650919, length of outstream: 58782, compression_ratio: 28.08545132863802 with average range: 391799.599060937 using bits 12
+2021-08-18 17:45:09 20G-F3H5JG5M-375 twoByteStartCompressor[70414] INFO expected size in bytes <88173, expected total compression ratio: ~18.723634219092013
+
+raise gz? source file.gz is 10497B
+decompressed -			    76942B ...compression ratio- >7
+
+2021-08-18 17:48:06 20G-F3H5JG5M-375 twoByteStartCompressor[70435] INFO LRU initialized.. range_ends[-1]: 1090519041 -  Random BS GO!!!
+2021-08-18 17:48:32 20G-F3H5JG5M-375 twoByteStartCompressor[70435] INFO length of instream: 76942, length of outstream: 11917, compression_ratio: 6.456490727532097 with average range: 220031.64554837625 using bits 13
+2021-08-18 17:48:32 20G-F3H5JG5M-375 twoByteStartCompressor[70435] INFO expected size in bytes <19366, expected total compression ratio: ~3.973045543736445
+
+hmmm... using 13 bits on average...
+	def __init__(self,lru_capacity=16384,lru_initial_size=131072,lru_grow_by=524288,two_byte_range = 256): 
+2021-08-18 17:51:43 20G-F3H5JG5M-375 twoByteStartCompressor[70464] INFO LRU initialized.. range_ends[-1]: 2164260865 -  Random BS GO!!!
+2021-08-18 17:52:09 20G-F3H5JG5M-375 twoByteStartCompressor[70464] INFO length of instream: 76942, length of outstream: 11917, compression_ratio: 6.456490727532097 with average range: 271021.8101871276 using bits 12
+2021-08-18 17:52:09 20G-F3H5JG5M-375 twoByteStartCompressor[70464] INFO expected size in bytes <17876, expected total compression ratio: ~4.3042067576639065
+
+not too bad..
+~1/4 of that outstream is 24 bit encodes.. try with 32768 - 
+2021-08-18 17:55:02 20G-F3H5JG5M-375 twoByteStartCompressor[70478] INFO LRU initialized.. range_ends[-1]: 4294967297 -  Random BS GO!!!
+2021-08-18 17:55:05 20G-F3H5JG5M-375 twoByteStartCompressor[70478] DEBUG end stream allowed range of -1
+2021-08-18 17:55:05 20G-F3H5JG5M-375 twoByteStartCompressor[70478] INFO length of instream: 76942, length of outstream: 11917, compression_ratio: 6.456490727532097 with average range: 109253.24695812704 using bits 14
+2021-08-18 17:55:05 20G-F3H5JG5M-375 twoByteStartCompressor[70478] INFO expected size in bytes <20855, expected total compression ratio: ~3.689379045792376
+
+
+	def __init__(self,lru_capacity=16384,lru_initial_size=131072,lru_grow_by=524288,two_byte_range = 16384): 
+2021-08-18 17:56:53 20G-F3H5JG5M-375 twoByteStartCompressor[70723] INFO LRU initialized.. range_ends[-1]: 3221225473 -  Random BS GO!!!
+2021-08-18 17:57:12 20G-F3H5JG5M-375 twoByteStartCompressor[70723] DEBUG end stream allowed range of 1048575
+2021-08-18 17:57:12 20G-F3H5JG5M-375 twoByteStartCompressor[70723] INFO length of instream: 76942, length of outstream: 11917, compression_ratio: 6.456490727532097 with average range: 237293.71888898214 using bits 13
+2021-08-18 17:57:12 20G-F3H5JG5M-375 twoByteStartCompressor[70723] INFO expected size in bytes <19366, expected total compression ratio: ~3.973045543736445
+
+	def __init__(self,lru_capacity=16384,lru_initial_size=131072,lru_grow_by=131072,two_byte_range = 16384): 
+2021-08-18 17:59:05 20G-F3H5JG5M-375 twoByteStartCompressor[70733] INFO LRU initialized.. range_ends[-1]: 3221225473 -  Random BS GO!!!
+2021-08-18 18:00:37 20G-F3H5JG5M-375 twoByteStartCompressor[70737] INFO length of instream: 76942, length of outstream: 11917, compression_ratio: 6.456490727532097 with average range: 147862.95342787614 using bits 13
+2021-08-18 18:00:37 20G-F3H5JG5M-375 twoByteStartCompressor[70737] INFO expected size in bytes <19366, expected total compression ratio: ~3.973045543736445
+
+most of these are only getting used once .. 
+lowering to 8192 cache size. gives ~3.89244
+bumping up the initial ranges to match though.. 
+2021-08-18 18:04:35 20G-F3H5JG5M-375 twoByteStartCompressor[70756] INFO length of instream: 76942, length of outstream: 12164, compression_ratio: 6.325386386057218 with average range: 339928.9391647484 using bits 12
+2021-08-18 18:04:35 20G-F3H5JG5M-375 twoByteStartCompressor[70756] INFO expected size in bytes <18246, expected total compression ratio: ~4.2169242573714785
+
+giving wicad stats a whirl..
+2021-08-18 18:06:48 20G-F3H5JG5M-375 twoByteStartCompressor[70775] INFO LRU initialized.. range_ends[-1]: 3221225473 -  Random BS GO!!!
+2021-08-18 18:07:55 20G-F3H5JG5M-375 twoByteStartCompressor[70775] DEBUG end stream allowed range of 524287
+2021-08-18 18:07:55 20G-F3H5JG5M-375 twoByteStartCompressor[70775] INFO length of instream: 1650919, length of outstream: 68417, compression_ratio: 24.13024540684333 with average range: 399710.4981510443 using bits 12
+2021-08-18 18:07:55 20G-F3H5JG5M-375 twoByteStartCompressor[70775] INFO expected size in bytes <102626, expected total compression ratio: ~16.086751895231227
+
+gzip - 38326
+
+gzip ~2.5x better than my worse case .. 
+of 68k length outstream, 21K out of range errors.. hmmm.. 13.5 bit start?
+	def __init__(self,lru_capacity=8192,lru_initial_size=370728,lru_grow_by=65536,two_byte_range = 16384): 
+2021-08-18 18:23:52 20G-F3H5JG5M-375 twoByteStartCompressor[71082] INFO length of instream: 1650919, length of outstream: 68417, compression_ratio: 24.13024540684333 with average range: 363914.8002397065 using bits 12
+2021-08-18 18:23:52 20G-F3H5JG5M-375 twoByteStartCompressor[71082] INFO expected size in bytes <102626, expected total compression ratio: ~16.086751895231227
+
+get that average range up and the average bits will be down.. ?
+
+13.1 bit start but 24 bit length 2
+	def __init__(self,lru_capacity=8192,lru_initial_size=489178,lru_grow_by=35110,two_byte_range = 256):  ick...
+
+	def __init__(self,lru_capacity=8192,lru_initial_size=489178,lru_grow_by=35110,two_byte_range = 4096): 
+
+	def __init__(self,lru_capacity=4096,lru_initial_size=978356,lru_grow_by=65536,two_byte_range = 4096): 
+
+2021-08-18 18:41:46 20G-F3H5JG5M-375 twoByteStartCompressor[71397] INFO length of instream: 1650919, length of outstream: 81544, compression_ratio: 20.24574462866673 with average range: 947994.6298440106 using bits 11
+2021-08-18 18:41:46 20G-F3H5JG5M-375 twoByteStartCompressor[71397] INFO expected size in bytes <112123, expected total compression ratio: ~14.724177911757623
+
+hmm... how many reuses are there? will give raw data I can recalculate on.. 
+	def __init__(self,lru_capacity=4096,lru_initial_size=0,lru_grow_by=1,two_byte_range = 4096): 
+2byte range (4095) -  	 6908
+first match (-1) - 		18511
+1 			0  			52583
+2 			1 			 2259
+3 			2 			  509
+4 			3 			  257
+5 			4 			  174
+6 			5 			   99
+7 			6 			   74
+8 			7 			   48
+9 			8 			   51
+10 			9 			   31
+11 		   10 			   24
+12 		   11 			   11
+...
+20 		   19 			    2
+
+weird.. trying to check matches at these indexes its kinda wonk..
+2021-08-18 7:05 pm
+hmmm.. appears my indexes are shifting aboots.. that would affect reuse scoring for sure.. 
+Assumings the issue then is my indexes going wonk, the actual reuses would properly lower needed bits once its fixed. -2 bits would put me better than gzip easy.. 
+
+next try will use 
+	def __init__(self,lru_capacity=4096,lru_initial_size=1,lru_grow_by=1,two_byte_range = 4096): 
+Well.. goods nightz..

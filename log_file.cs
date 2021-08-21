@@ -539,7 +539,7 @@ public class log_file : Node
 				uint new_num_words = 0 ;
 				word_types[num_words] = ByteTypes.CodePointType.INVALID ; 
 				num_words++;
-				int state = 0;
+				int state = 1; //testing how many words in test file if not creating words from syslog
 				for(int i = 0; i < num_words; i++)
 				{
 					switch(state)
